@@ -31,10 +31,10 @@ def main(argv=None, llm=None, fetch=None, gsc_rows=None):
         print("GROQ_API_KEY missing: cannot write a page"); return 2
 
     cands = keywords.discover(cfg, today, fetch=fetch or keywords.autocomplete)
-    if gsc_rows is None and os.environ.get("GSC_SA_JSON") and os.environ.get("GSC_SITE"):
+    if gsc_rows is None and os.environ.get("GSC_SITE") and (os.environ.get("GSC_SA_JSON") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")):
         try:
             from . import gsc
-            gsc_rows = gsc.fetch(os.environ["GSC_SITE"], os.environ["GSC_SA_JSON"])
+            gsc_rows = gsc.fetch(os.environ["GSC_SITE"], os.environ.get("GSC_SA_JSON") or None)
         except Exception as ex:
             print("Search Console skipped:", ex)
     cands = (gsc_rows or []) + cands

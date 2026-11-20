@@ -25,7 +25,7 @@ Netlify -> Add new site -> Import from Git -> pick the repo. `netlify.toml` alre
 1. search.google.com/search-console -> Add property -> **URL prefix** -> your site address.
 2. Verify with the HTML tag method and paste the tag into `site/index.html` inside `<head>`, then deploy. (Send me the tag and I'll place it.)
 3. Sitemaps -> submit `sitemap.xml`.
-4. Optional but best: let the agent read your real queries. In Google Cloud create a service account, download its JSON key, and add the service account's email as a **user** in Search Console (Settings -> Users). Put the whole JSON in the `GSC_SA_JSON` secret and your property address in `GSC_SITE` (for URL prefix it looks like `https://anmolrattan.netlify.app/`).
+4. Optional but best: let the agent read your real queries, with no key file. In Google Cloud create a service account, set up Workload Identity Federation for this GitHub repo, and add the service account's email as a **user** in Search Console (Settings -> Users). Put the provider path in the repo *variable* `GCP_WIF_PROVIDER`, the service account email in the variable `GCP_SERVICE_ACCOUNT`, and your property address in the secret `GSC_SITE` (for URL prefix it looks like `https://anmolrattan.netlify.app/`). If your organization allows keys you can instead put a JSON key in the `GSC_SA_JSON` secret.
 
 Also add the site in **Bing Webmaster Tools** and submit the sitemap. Bing feeds ChatGPT search and Copilot.
 

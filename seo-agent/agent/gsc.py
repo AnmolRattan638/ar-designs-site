@@ -3,11 +3,18 @@ import json
 from datetime import date, timedelta
 from urllib.parse import quote
 
-def fetch(site, sa_json, days=28):
-    from google.oauth2 import service_account
+SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
+
+def fetch(site, sa_json=None, days=28):
+    """sa_json=None -> keyless login (Workload Identity Federation / Application Default Credentials).
+    sa_json given -> legacy service-account key."""
     from google.auth.transport.requests import AuthorizedSession
-    creds = service_account.Credentials.from_service_account_info(
-        json.loads(sa_json), scopes=["https://www.googleapis.com/auth/webmasters.readonly"])
+    if sa_json:
+        from google.oauth2 import service_account
+        creds = service_account.Credentials.from_service_account_info(json.loads(sa_json), scopes=SCOPES)
+    else:
+        import google.auth
+        creds, _ = google.auth.default(scopes=SCOPES)
     s = AuthorizedSession(creds)
     end = date.today() - timedelta(days=2)
     start = end - timedelta(days=days)
