@@ -1,0 +1,62 @@
+{
+ "site_url": "https://anmolrattan.netlify.app",
+ "brand": "AR Designs",
+ "author": "Anmol Rattan",
+ "whatsapp": "https://wa.me/919816483799",
+ "cities": [
+  "Shimla",
+  "Manali",
+  "Dharamshala",
+  "Kullu",
+  "Kasauli",
+  "Mandi",
+  "Palampur",
+  "Dehradun",
+  "Chandigarh"
+ ],
+ "industries": [
+  "hotel",
+  "cafe",
+  "gym",
+  "homestay",
+  "restaurant",
+  "yoga studio",
+  "resort",
+  "salon"
+ ],
+ "seed_templates": [
+  "website for {industry} in {city}",
+  "{industry} website design {city}",
+  "seo for {industry} in {city}",
+  "ai chatbot for {industry}",
+  "ai lead generation for {industry}",
+  "how much does a website cost for a {industry} in india",
+  "google business profile for {industry}",
+  "ai cartoon animation ads cost india",
+  "whatsapp chatbot for {industry}",
+  "how to get more bookings for a {industry}",
+  "instagram reels ideas for {industry}"
+ ],
+ "relevant_terms": [
+  "website",
+  "web design",
+  "chatbot",
+  "bot",
+  "lead",
+  "seo",
+  "animation",
+  "cartoon",
+  "reel",
+  "ads",
+  "google business",
+  "booking",
+  "whatsapp",
+  "marketing",
+  "template"
+ ],
+ "seeds_per_run": 20,
+ "suggestions_per_seed": 8,
+ "min_days_between_runs": 13,
+ "max_pages_per_run": 1,
+ "model": "llama-3.3-70b-versatile"
+}

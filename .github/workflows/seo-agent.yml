@@ -1,0 +1,57 @@
+name: SEO Agent (biweekly)
+
+on:
+  schedule:
+    - cron: "30 3 * * 1"        # every Monday 09:00 IST; the agent itself skips if run under 13 days ago
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run even if the last run was under 13 days ago"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r seo-agent/requirements.txt
+      - name: Run SEO agent
+        working-directory: seo-agent
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GSC_SA_JSON: ${{ secrets.GSC_SA_JSON }}
+          GSC_SITE: ${{ secrets.GSC_SITE }}
+          FORCE: ${{ inputs.force }}
+        run: python -m agent.run --root ..
+      - name: Open PR for approval
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: seo-agent/new-page
+          delete-branch: true
+          add-paths: |
+            site/**
+            seo-agent/state/**
+          commit-message: "SEO agent: new page for approval"
+          title: "SEO agent: new page for approval"
+          body-path: seo-agent/out/pr_body.md
+      - name: Tell me on Telegram
+        if: steps.cpr.outputs.pull-request-url != ''
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PR: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$CHAT" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${CHAT}" \
+              --data-urlencode "text=New SEO page ready for approval. Merge the PR to publish, close it to reject: ${PR}"
+          fi

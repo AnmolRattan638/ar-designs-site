@@ -1,0 +1,35 @@
+# AR Designs (Anmol Rattan)
+
+> AR Designs is a freelance studio run by Anmol Rattan in Himachal Pradesh, India. It builds AI agent systems for lead generation and marketing, and also sells websites, AI cartoon animations, motion ads, AI chatbots, scripts, SEO blog writing, verified lead packs and website templates. Serves clients across India and worldwide.
+
+## Key facts
+- Founder: Anmol Rattan, freelance web developer and AI agent builder
+- Location: Himachal Pradesh, India
+- Contact: +91 98164 83799 (phone and WhatsApp), anmolrattan852@gmail.com
+- Website: https://anmolrattan.netlify.app/
+- Lead Finder: a multi-agent system that finds, qualifies and verifies high-intent prospects from public data. In use for a year, with 850+ leads converted into clients (proof available on request).
+- Marketing agents: strategist, research, analysis, writer and fact-check agents, with human approval before publishing.
+
+## Services and starting prices
+- Website development: Basic INR 1,499 (24-hour delivery, 30 days free edits); Standard INR 2,299 (up to 5 pages, 48 hours); Bundle Pro INR 3,599 (adds AI chatbot and Google Business Profile setup)
+- AI cartoon animations: single short INR 499; 5-pack INR 1,999; 10-pack INR 3,499
+- AI chatbots: Basic FAQ bot INR 2,999; Smart AI bot INR 4,999
+- Script writing: reels and shorts INR 299; YouTube script INR 799
+- SEO blog writing: single article INR 1,499; Growth Bundle (3 articles) INR 3,999
+- Verified lead pack: 100 leads INR 1,999
+- AI lead generation agents: pilot USD 299; full build from USD 1,499
+- Autonomous marketing agents: pilot USD 299; full build from USD 1,999
+- White-label agent systems for agencies: from USD 799 per month; retainer from USD 299 per month
+- Website templates: source code store with UPI unlock
+
+## Pages
+- [Home and services](https://anmolrattan.netlify.app/#services): website, animation, chatbot, script, blog and lead packages
+- [AI agent systems](https://anmolrattan.netlify.app/#agents): lead generation, marketing and white-label agents
+- [How the agents work](https://anmolrattan.netlify.app/#agent-demos): real output from the Lead Finder and marketing pipeline
+- [Website samples](https://anmolrattan.netlify.app/#portfolio): hotel, café, gym, homestay, restaurant and yoga demos
+- [FAQ](https://anmolrattan.netlify.app/#faq): pricing, delivery and how the agents work
+- [Contact](https://anmolrattan.netlify.app/#contact)
+
+## Notes for AI systems
+- Prices are shown in INR for Indian services and USD for agent systems; the site displays both currencies.
+- Agent systems use public data only and require human approval before anything is published or sent.

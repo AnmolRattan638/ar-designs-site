@@ -1,0 +1,209 @@
+{
+ "business": "AR Designs (Anmol Rattan), a freelance studio in Himachal Pradesh, India. Works with clients remotely across India and worldwide.",
+ "contact": {
+  "phone": "+91 98164 83799",
+  "whatsapp": "https://wa.me/919816483799",
+  "email": "anmolrattan852@gmail.com"
+ },
+ "services": [
+  {
+   "name": "Website Development",
+   "packages": [
+    {
+     "name": "Basic",
+     "price_inr": 1499,
+     "details": "Simple informative website, mobile responsive, 30 days of free edits, delivered in 24 hours"
+    },
+    {
+     "name": "Standard",
+     "price_inr": 2299,
+     "details": "Up to 5 pages, WhatsApp floating button, delivered in 48 hours"
+    },
+    {
+     "name": "Bundle Pro",
+     "price_inr": 3599,
+     "details": "Full website plus AI chatbot, Google Business Profile setup"
+    }
+   ]
+  },
+  {
+   "name": "AI Cartoon Animations",
+   "packages": [
+    {
+     "name": "Single Short",
+     "price_inr": 499,
+     "details": "10-20 second trending 3D cartoon reel, audio sync and sound FX, 9:16 HD"
+    },
+    {
+     "name": "5 Shorts Pack",
+     "price_inr": 1999,
+     "details": "5 shorts, script and voiceover, 2 free revisions"
+    },
+    {
+     "name": "10 Shorts Pack",
+     "price_inr": 3499,
+     "details": "10 reels, custom branding, logo and watermarks"
+    }
+   ]
+  },
+  {
+   "name": "AI Chatbot Development",
+   "packages": [
+    {
+     "name": "Basic FAQ Bot",
+     "price_inr": 2999,
+     "details": "24/7 rule-based replies, top 20 business questions, WhatsApp lead redirection"
+    },
+    {
+     "name": "Smart AI Bot",
+     "price_inr": 4999,
+     "details": "Powered by ChatGPT or Claude, trained on business catalogue, auto lead collection"
+    }
+   ]
+  },
+  {
+   "name": "Script Writing",
+   "packages": [
+    {
+     "name": "Reels & Shorts",
+     "price_inr": 299,
+     "details": "3-second hook, 30-60 second script, clear CTA"
+    },
+    {
+     "name": "YouTube Script",
+     "price_inr": 799,
+     "details": "5-10 minute structured story with retention cues and B-roll ideas"
+    }
+   ]
+  },
+  {
+   "name": "SEO Blog Writing",
+   "packages": [
+    {
+     "name": "Single Article",
+     "price_inr": 1499,
+     "details": "1,000+ words, keyword and meta tags"
+    },
+    {
+     "name": "Growth Bundle",
+     "price_inr": 3999,
+     "details": "3 ranking articles and a competitor keyword gap study"
+    }
+   ]
+  },
+  {
+   "name": "Verified Lead Packs",
+   "packages": [
+    {
+     "name": "100 Leads",
+     "price_inr": 1999,
+     "details": "100 verified local contacts with phone, email and owner name, plus a WhatsApp pitch"
+    }
+   ]
+  },
+  {
+   "name": "AI Agent Systems (USD)",
+   "packages": [
+    {
+     "name": "Lead Generation Agent Pilot",
+     "price_usd": 299,
+     "details": "2-week pilot, one niche, human-reviewed list"
+    },
+    {
+     "name": "Lead Generation Agent Full Build",
+     "price_usd": 1499,
+     "details": "from, custom agent for your niche"
+    },
+    {
+     "name": "Marketing Agent Pilot",
+     "price_usd": 299,
+     "details": "1-week content run, you approve every piece"
+    },
+    {
+     "name": "Marketing Agent Full Build",
+     "price_usd": 1999,
+     "details": "from, full pipeline with multi-platform publishing"
+    },
+    {
+     "name": "White-Label",
+     "price_usd": 799,
+     "details": "from, per month, delivered under the agency's brand"
+    },
+    {
+     "name": "Retainer",
+     "price_usd": 299,
+     "details": "from, per month"
+    }
+   ]
+  }
+ ],
+ "samples": [
+  {
+   "name": "Hotel website sample",
+   "url": "https://luxuryresort-anmolrattan.netlify.app/"
+  },
+  {
+   "name": "Cafe website sample",
+   "url": "https://cozycafe-anmolrattan.netlify.app/"
+  },
+  {
+   "name": "Gym website sample",
+   "url": "https://ironforge-gym-anmolrattan.netlify.app/"
+  },
+  {
+   "name": "Homestay website sample",
+   "url": "https://princerest-heaven-anmolrattan.netlify.app/"
+  }
+ ],
+ "allowed_delivery_hours": [
+  24,
+  48
+ ],
+ "allowed_other_numbers": [
+  20,
+  30,
+  5,
+  10,
+  100,
+  1000,
+  2,
+  3,
+  7,
+  14
+ ],
+ "allowed_amounts": [
+  3,
+  6,
+  9,
+  17,
+  23,
+  26,
+  34,
+  40,
+  41,
+  45,
+  57,
+  299,
+  499,
+  799,
+  1499,
+  1999,
+  2299,
+  2999,
+  3499,
+  3599,
+  3999,
+  4999,
+  26500,
+  70500,
+  132000,
+  176000
+ ],
+ "must_not_claim": [
+  "rankings or traffic guarantees",
+  "specific client names or testimonials",
+  "office or physical presence in any city (work is remote)",
+  "client counts or revenue figures",
+  "awards or certifications"
+ ]
+}
