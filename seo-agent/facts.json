@@ -106,7 +106,8 @@
    "packages": [
     {
      "name": "Lead Generation Agent Pilot",
-     "price_usd": 299,
+     "price_usd": 17,
+     "price_inr": 1499,
      "details": "2-week pilot, one niche, human-reviewed list"
     },
     {
@@ -116,7 +117,8 @@
     },
     {
      "name": "Marketing Agent Pilot",
-     "price_usd": 299,
+     "price_usd": 40,
+     "price_inr": 3499,
      "details": "1-week content run, you approve every piece"
     },
     {
