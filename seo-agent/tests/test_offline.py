@@ -4,13 +4,15 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
-from agent import run, factcheck, choose, writer  # noqa
+from agent import run, factcheck, choose, writer, keywords, analyst, gsc, indexnow  # noqa
 
 GOOD = {
     "slug": "website-for-hotel-in-manali", "title": "Website for a Hotel in Manali: Cost and What You Get",
     "meta_description": "What a hotel website in Manali costs and what is included, with delivery times and real package prices.",
     "h1": "Website for a Hotel in Manali: Cost and What You Get",
     "intro": "A simple hotel website starts at Rs 1,499 and is delivered in 24 hours. Bigger sites with up to 5 pages start at Rs 2,299.",
+    "key_takeaways": ["Basic hotel website: Rs 1,499, delivered in 24 hours.", "Standard hotel website: Rs 2,299, delivered in 48 hours.", "Every package includes a WhatsApp button."],
+    "comparison_table": {"caption": "Hotel website packages", "headers": ["Package", "Price", "Delivery"], "rows": [["Basic", "Rs 1,499", "24 hours"], ["Standard", "Rs 2,299", "48 hours"]]},
     "sections": [{"h2": "Packages", "paragraphs": ["Basic is Rs 1,499 with 30 days of free edits.", "Standard is Rs 2,299 and takes 48 hours."], "bullets": ["Mobile responsive", "WhatsApp button"]}] + [
         {"h2": "Section %d" % i, "paragraphs": ["Helpful plain advice for a hotel owner."]} for i in range(3)],
     "faq": [{"q": "Question %d?" % i, "a": "Answer %d." % i} for i in range(4)],
@@ -88,6 +90,108 @@ def test_dedupe_and_fallback():
     assert p["keyword"] == "ai chatbot for hotel" and p["page_type"] == "guide"
     print("ok dedupe + fallback")
 
+CFG = json.loads((HERE / "config.json").read_text())
+
+def test_aeo_page_elements():
+    r = sandbox()
+    assert run.main(["--root", str(r), "--force"], llm=FakeLLM(), fetch=fake_fetch) == 0
+    page = (r / "site/blog/website-for-hotel-in-manali/index.html").read_text()
+    assert "Key takeaways" in page and "<table>" in page and "Hotel website packages" in page
+    assert "SpeakableSpecification" in page and 'class="byline"' in page and "<time datetime=" in page
+    assert (r / "seo-agent/state/drafts/website-for-hotel-in-manali.json").exists()
+    exps = json.loads((r / "seo-agent/state/experiments.json").read_text())
+    assert exps[0]["mode"] == "new" and exps[0]["results"] == [] and exps[0]["industry"] == "restaurant" and exps[0]["city"] == "palampur"   # the fake LLM picked the top-scored keyword
+    bad = json.loads(json.dumps(GOOD)); bad["key_takeaways"] = ["only one"]
+    assert any("key_takeaways" in i for i in writer.validate(bad))
+    bad = json.loads(json.dumps(GOOD)); bad["comparison_table"]["rows"][0] = ["too", "short"]
+    assert "bad comparison_table" in writer.validate(bad)
+    # table cells are fact-checked too
+    bad = json.loads(json.dumps(GOOD)); bad["comparison_table"]["rows"][0][1] = "Rs 999"
+    assert any("999" in i for i in factcheck.deterministic(bad, json.loads((HERE / "facts.json").read_text())))
+    print("ok AEO page elements, stored draft, experiment logged, table fact-checked")
+
+def test_scoring_and_diversity():
+    a = keywords.score("how much does a website cost for a hotel in manali", CFG)
+    b = keywords.score("website templates free", CFG)
+    assert a > b + 3, (a, b)
+    boosted = keywords.score("website for hotel in shimla", CFG, {"bonus": {"industry:hotel": 1.5}})
+    assert boosted == keywords.score("website for hotel in shimla", CFG) + 1.5
+    cands = [{"keyword": "website for hotel in shimla", "priority": 5.0}, {"keyword": "website for gym in mandi", "priority": 4.5}]
+    pub = [{"keyword": "website for hotel in manali", "slug": "x", "date": "2026-01-01"}] * 2
+    p = choose.choose(cands, [], None, cfg=CFG, published=pub)
+    assert p["keyword"] == "website for gym in mandi", p      # two hotel pages already: spread out
+    rel = keywords.related([{"keyword": "seo for hotel in kullu", "slug": "a", "date": "2026-01-01"}, {"keyword": "ai chatbot for gym", "slug": "b", "date": "2026-01-02"}],
+                           "website for hotel in manali", CFG)
+    assert [x["slug"] for x in rel] == ["a"]
+    cs = keywords.discover(dict(CFG, seeds_per_run=2, question_seeds_per_run=3), "2026-11-24", fetch=lambda q: [], sleep=0)
+    assert any(c["source"] == "question" for c in cs)
+    print("ok scoring, diversity, related links, question seeds")
+
+def test_learning_loop():
+    exps = analyst.log_experiment([], "website-for-hotel-in-manali", "u", "website for hotel in manali", "landing", "new", CFG, "2026-10-01")
+    analyst.log_experiment(exps, "seo-for-gym-in-mandi", "u2", "seo for gym in mandi", "landing", "new", CFG, "2026-10-01")
+    rows = [{"page": "https://x/blog/website-for-hotel-in-manali/", "query": "hotel website manali", "clicks": 3, "impressions": 40, "position": 6.2}]
+    analyst.evaluate(exps, rows, "2026-10-10")
+    assert exps[0]["results"] == []                               # too early
+    analyst.evaluate(exps, rows, "2026-10-20")
+    assert exps[0]["results"][-1]["label"] == "winning" and exps[1]["results"][-1]["label"] == "no_impressions"
+    assert len(exps[0]["results"]) == 1                          # day-28 not due yet
+    analyst.evaluate(exps, rows, "2026-11-01")
+    assert [r["checkpoint"] for r in exps[0]["results"]] == [14, 28]
+    L = analyst.build_lessons(exps, "2026-11-01")
+    assert L["bonus"]["industry:hotel"] > 0 > L["bonus"]["industry:gym"] and L["notes"]
+    pubs = [{"slug": "website-for-hotel-in-manali", "date": "2026-09-01", "keyword": "k"}, {"slug": "new-one", "date": "2026-11-01", "keyword": "k2"}]
+    sq = [{"page": "https://x/blog/website-for-hotel-in-manali/", "query": "hotel website cost manali", "clicks": 0, "impressions": 30, "position": 14.0}]
+    c = analyst.refresh_candidate(pubs, sq, "2026-11-10", CFG)
+    assert c["slug"] == "website-for-hotel-in-manali" and c["queries"] == ["hotel website cost manali"]
+    assert analyst.refresh_candidate(pubs[1:], sq, "2026-11-10", CFG) is None   # too young
+    assert "winning" in analyst.report_md(exps, L, True)
+    sr = gsc.striking_queries(sq + [{"page": "https://x/", "query": "web design shimla", "clicks": 0, "impressions": 12, "position": 12.0}], ["website-for-hotel-in-manali"])
+    assert [x["keyword"] for x in sr] == ["web design shimla"]
+    print("ok learning loop: checkpoints, lessons, refresh candidate, striking queries")
+
+def test_refresh_run():
+    r = sandbox()
+    cfgp = r / "seo-agent/config.json"; c = json.loads(cfgp.read_text()); c["refresh_min_age_days"] = 0; cfgp.write_text(json.dumps(c))
+    assert run.main(["--root", str(r), "--force"], llm=FakeLLM(), fetch=fake_fetch) == 0
+    slug = "website-for-hotel-in-manali"
+    rows = [{"page": "https://anmolrattan.netlify.app/blog/%s/" % slug, "query": "hotel website cost manali", "clicks": 0, "impressions": 30, "position": 14.0}]
+    class SpyLLM(FakeLLM):
+        def json(self, system, user, **kw):
+            if "REFRESH MODE" in user: self.refresh_seen = "hotel website cost manali" in user
+            return FakeLLM.json(self, system, user, **kw)
+    spy = SpyLLM()
+    assert run.main(["--root", str(r), "--force"], llm=spy, fetch=fake_fetch, page_rows=rows) == 0      # auto: last run was 'new' -> refresh
+    assert getattr(spy, "refresh_seen", False)
+    assert json.loads((r / "seo-agent/state/last_run.json").read_text())["mode"] == "refresh"
+    assert len(json.loads((r / "seo-agent/state/published.json").read_text())) == 1                      # refreshed, not duplicated
+    assert "## Page refresh for approval" in (r / "seo-agent/out/pr_body.md").read_text()
+    page = (r / ("site/blog/%s/index.html" % slug)).read_text()
+    assert '"datePublished": "%s"' % __import__("datetime").date.today().isoformat() in page
+    print("ok refresh run: real queries sent to the writer, page updated in place")
+
+def test_internal_links_and_indexnow():
+    from agent import publish as pub
+    r = sandbox()
+    assert run.main(["--root", str(r), "--force"], llm=FakeLLM(), fetch=fake_fetch) == 0
+    state = r / "seo-agent/state"
+    pubs = json.loads((state / "published.json").read_text())
+    kw = pubs[0]["keyword"]                                   # e.g. "seo for restaurant in palampur price"
+    second = json.loads(json.dumps(GOOD)); second["slug"] = "second-guide"; second["title"] = "Second Guide"
+    pubs.append({"slug": "second-guide", "title": "Second Guide", "keyword": kw + " cost", "page_type": "guide", "date": "2026-11-25", "modified": "2026-11-25", "description": "d"})
+    (state / "drafts" / "second-guide.json").write_text(json.dumps(second))
+    facts = json.loads((r / "seo-agent/facts.json").read_text()); cfg = json.loads((r / "seo-agent/config.json").read_text())
+    pub.rerender_others(pubs, "second-guide", r / "site/blog", cfg, facts, state)
+    first_page = (r / "site/blog/website-for-hotel-in-manali/index.html").read_text()
+    assert "Related guides" in first_page and "/blog/second-guide/" in first_page      # old page now links to the new one
+    urls = indexnow.urls_from_paths(["site/blog/x-y/index.html", "site/index.html", "site/blog/index.html", "seo-agent/state/published.json"], CFG)
+    assert urls == [CFG["site_url"] + "/blog/x-y/", CFG["site_url"] + "/blog/"]
+    pl = indexnow.payload(urls, CFG)
+    assert pl["host"] == "anmolrattan.netlify.app" and pl["keyLocation"].endswith(CFG["indexnow_key"] + ".txt")
+    assert (HERE.parent / "site" / (CFG["indexnow_key"] + ".txt")).read_text() == CFG["indexnow_key"]
+    print("ok two-way internal links, IndexNow payload + key file")
+
 if __name__ == "__main__":
-    for t in (test_rules, test_dedupe_and_fallback, test_happy_path, test_bad_price_is_blocked, test_llm_check_blocks): t()
+    for t in (test_rules, test_dedupe_and_fallback, test_happy_path, test_bad_price_is_blocked, test_llm_check_blocks,
+              test_aeo_page_elements, test_scoring_and_diversity, test_learning_loop, test_refresh_run, test_internal_links_and_indexnow): t()
     print("ALL PASSED")

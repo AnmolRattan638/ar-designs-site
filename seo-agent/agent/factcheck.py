@@ -14,6 +14,10 @@ def flatten(d):
         parts += [s["h2"]] + list(s.get("paragraphs", [])) + list(s.get("bullets", []) or [])
     for f in d["faq"]:
         parts += [f["q"], f["a"]]
+    parts += list(d.get("key_takeaways") or [])
+    t = d.get("comparison_table")
+    if t:
+        parts += [t.get("caption", "")] + list(t.get("headers", [])) + [c for r in t.get("rows", []) for c in r]
     return "\n".join(str(p) for p in parts)
 
 def deterministic(d, facts):

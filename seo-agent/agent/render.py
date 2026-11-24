@@ -22,6 +22,11 @@ h2{font-size:1.45rem;color:var(--gold-bright);margin:34px 0 10px}p{color:#cbd5e1
 .more{margin-top:26px;font-size:.92rem}.more a{margin-right:14px}
 footer{text-align:center;padding:24px;color:var(--muted);font-size:.82rem;border-top:1px solid rgba(201,168,76,.15)}
 .list a.card{display:block;text-decoration:none;padding:18px 20px;margin-bottom:12px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(150deg,var(--navy),var(--navy-card))}
+.byline{font-size:.85rem;color:var(--muted);margin:-6px 0 18px}.byline a{color:var(--muted)}
+.takeaways{margin:0 0 28px;padding:16px 20px;border:1px solid var(--border);border-radius:14px;background:rgba(13,24,43,.7)}
+.takeaways b{color:var(--gold-bright);font-family:'Playfair Display',serif}.takeaways ul{margin:8px 0 0 20px}
+.tablewrap{overflow-x:auto;margin:0 0 18px}table{border-collapse:collapse;width:100%;min-width:420px;font-size:.95rem}
+th,td{padding:10px 12px;border:1px solid var(--border);text-align:left;color:#cbd5e1}th{color:var(--gold-bright);background:rgba(13,24,43,.9)}
 .list a.card b{color:var(--gold-bright);display:block;font-size:1.05rem}.list a.card span{color:var(--muted);font-size:.9rem}"""
 
 FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700&display=swap" />'
@@ -40,26 +45,51 @@ def shell(title, desc, canonical, body, schema, cfg):
             ) % (e(title), e(cfg["brand"]), e(desc), e(canonical), e(title), e(desc), e(canonical), FONTS, CSS, schema,
                  e(cfg["brand"]), e(cfg["whatsapp"]), body, str(__import__("datetime").date.today().year), e(cfg["author"]) + " (" + e(cfg["brand"]) + ")")
 
-def render_page(d, cfg, facts, date_iso):
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+def _fmt(iso):
+    y, m, d = iso.split("-")
+    return "%d %s %s" % (int(d), MONTHS[int(m) - 1], y)
+
+def render_page(d, cfg, facts, date_iso, published_iso=None, related=None):
+    published_iso = published_iso or date_iso
     url = "%s/blog/%s/" % (cfg["site_url"], d["slug"])
     secs = ""
     for s in d["sections"]:
         secs += "<h2>%s</h2>" % e(s["h2"]) + "".join("<p>%s</p>" % e(p) for p in s["paragraphs"])
         if s.get("bullets"):
             secs += "<ul>" + "".join("<li>%s</li>" % e(b) for b in s["bullets"]) + "</ul>"
+    take = ""
+    if d.get("key_takeaways"):
+        take = '<div class="takeaways"><b>Key takeaways</b><ul>%s</ul></div>' % "".join("<li>%s</li>" % e(x) for x in d["key_takeaways"])
+    table = ""
+    t = d.get("comparison_table")
+    if t:
+        table = ('<h2>%s</h2><div class="tablewrap"><table><thead><tr>%s</tr></thead><tbody>%s</tbody></table></div>'
+                 % (e(t["caption"]), "".join("<th>%s</th>" % e(h) for h in t["headers"]),
+                    "".join("<tr>%s</tr>" % "".join("<td>%s</td>" % e(c) for c in r) for r in t["rows"])))
+    rel = ""
+    if related:
+        rel = '<h2>Related guides</h2><div class="list">%s</div>' % "".join(
+            '<a class="card" href="/blog/%s/"><b>%s</b><span>%s</span></a>' % (e(p["slug"]), e(p["title"]), e(p["description"])) for p in related)
     faq = "".join("<details><summary>%s</summary><p>%s</p></details>" % (e(f["q"]), e(f["a"])) for f in d["faq"])
     wa = cfg["whatsapp"] + "?text=" + quote("Hi Anmol, I read your page: " + d["title"])
     samples = "".join('<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>' % (e(s["url"]), e(s["name"])) for s in facts["samples"])
-    body = ('<main><div class="crumbs"><a href="/">Home</a> / <a href="/blog/">Guides</a> / %s</div><h1>%s</h1><div class="intro">%s</div>%s'
-            '<h2>Frequently asked questions</h2><div class="faq">%s</div>'
+    byline = '<div class="byline">By <a href="/">%s</a> &middot; Updated <time datetime="%s">%s</time></div>' % (e(cfg["author"]), e(date_iso), _fmt(date_iso))
+    body = ('<main><div class="crumbs"><a href="/">Home</a> / <a href="/blog/">Guides</a> / %s</div><h1>%s</h1>%s<div class="intro">%s</div>%s%s%s'
+            '<h2>Frequently asked questions</h2><div class="faq">%s</div>%s'
             '<div class="cta"><p>%s</p><a class="wa" href="%s" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></div>'
             '<div class="more"><a href="/#services">See all packages</a><a href="/#agents">AI agent systems</a><a href="/#faq">More FAQs</a></div>'
-            '<div class="more">Live samples: %s</div></main>') % (e(d["h1"]), e(d["h1"]), e(d["intro"]), secs, faq, e(d["cta_text"]), e(wa), samples)
+            '<div class="more">Live samples: %s</div></main>') % (e(d["h1"]), e(d["h1"]), byline, e(d["intro"]), take, secs, table, faq, rel, e(d["cta_text"]), e(wa), samples)
+    same_as = [u for u in cfg.get("same_as", []) if u]
     author = {"@type": "Person", "name": cfg["author"], "url": cfg["site_url"] + "/"}
+    publisher = {"@type": "Organization", "name": cfg["brand"], "url": cfg["site_url"] + "/"}
+    if same_as:
+        author["sameAs"] = same_as; publisher["sameAs"] = same_as
     schema = ld({"@context": "https://schema.org", "@graph": [
-        {"@type": "Article", "headline": d["title"], "description": d["meta_description"], "datePublished": date_iso,
-         "dateModified": date_iso, "inLanguage": "en-IN", "mainEntityOfPage": url, "author": author,
-         "publisher": {"@type": "Organization", "name": cfg["brand"], "url": cfg["site_url"] + "/"}},
+        {"@type": "Article", "headline": d["title"], "description": d["meta_description"], "datePublished": published_iso,
+         "dateModified": date_iso, "inLanguage": "en-IN", "mainEntityOfPage": url, "author": author, "publisher": publisher,
+         "speakable": {"@type": "SpeakableSpecification", "cssSelector": [".intro", ".takeaways"]}},
         {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": f["q"], "acceptedAnswer": {"@type": "Answer", "text": f["a"]}} for f in d["faq"]]},
         {"@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": cfg["site_url"] + "/"},

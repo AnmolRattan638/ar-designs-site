@@ -45,3 +45,15 @@ After that it runs every Monday morning and skips itself unless 13+ days have pa
 
 ## Test locally (no keys needed)
 `cd seo-agent && python3 -I tests/test_offline.py`
+
+
+## v2: weekly, scored, answer-engine ready, and it learns
+
+- **Cadence:** weekly. Runs alternate between a **new page** and a **refresh** of an existing page (`--mode auto|new|refresh`).
+- **Keywords:** Google autocomplete plus question-style seeds ("how much does...", "is ... worth it"). Every candidate gets a transparent intent score (buying words, city, industry, question form), and the pick is spread across industries and cities.
+- **AEO/GEO page format:** answer-first intro, 3 quotable key takeaways, optional fact-checked comparison table, FAQ + FAQPage schema, Article/Person/Breadcrumb schema, speakable markup, visible byline and "Updated" date, and two-way "Related guides" links. Set `same_as` in `config.json` (LinkedIn, Instagram, etc.) to add entity links to the schema.
+- **Learning loop:** `state/experiments.json` logs every page. At 14 and 28 days `agent/analyst.py` scores it against Search Console (needs `GSC_SITE` + the Google login), writes `state/lessons.json`, and those lessons nudge the next keyword score. Each PR includes a learning report.
+- **Refresh:** pages whose queries sit at positions 8-30, or that have not changed for 60 days, are rewritten (same fact-check rules) with the real queries added.
+- **IndexNow:** after a merge, `.github/workflows/indexnow.yml` pings Bing/IndexNow with the changed guide URLs. The key file lives in `site/`.
+
+Offline tests: `cd seo-agent && python -I tests/test_offline.py`
