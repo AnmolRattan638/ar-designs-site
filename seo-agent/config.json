@@ -56,7 +56,30 @@
  ],
  "seeds_per_run": 20,
  "suggestions_per_seed": 8,
- "min_days_between_runs": 13,
+ "min_days_between_runs": 6,
  "max_pages_per_run": 1,
- "model": "llama-3.3-70b-versatile"
+ "model": "llama-3.3-70b-versatile",
+ "question_seeds_per_run": 8,
+ "question_templates": [
+  "how much does a {topic} cost for a {industry}",
+  "is a {topic} worth it for a {industry}",
+  "what should a {industry} put on a {topic}"
+ ],
+ "question_topics": [
+  "website",
+  "whatsapp chatbot",
+  "google business profile",
+  "seo",
+  "lead generation"
+ ],
+ "refresh_min_age_days": 21,
+ "refresh_stale_days": 60,
+ "same_as": [],
+ "indexnow_key": "332009ddc3d73dd9e16de45b470608da",
+ "min_words": 1500,
+ "min_sections": 7,
+ "min_section_words": 170,
+ "min_faq": 7,
+ "llm_pause_seconds": 8,
+ "anthropic_model": "claude-sonnet-5-5"
 }

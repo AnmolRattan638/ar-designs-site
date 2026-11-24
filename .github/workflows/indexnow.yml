@@ -1,0 +1,27 @@
+name: IndexNow ping
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/blog/**"
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Wait for the Netlify deploy to go live
+        run: sleep 120
+      - name: Submit changed guide pages
+        working-directory: seo-agent
+        run: python -m agent.indexnow --root .. --before "${{ github.event.before }}" --after "${{ github.sha }}"

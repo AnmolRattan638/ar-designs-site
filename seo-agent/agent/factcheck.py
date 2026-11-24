@@ -6,14 +6,23 @@ HOURS = re.compile(r"(\d+)\s*[- ]?\s*hours?\b", re.I)
 BANNED = [r"guarantee", r"#\s?1\b", r"number one", r"top[- ]rated", r"\baward", r"testimonial",
           r"our clients include", r"thousands of", r"\b\d{3,}\+?\s+(?:clients|customers|businesses|leads)",
           r"rank(?:s|ing)?\s+(?:#|number|first|on page one)", r"overnight", r"instantly rank",
-          r"our (?:office|team of)", r"visit (?:us|our office)"]
+          r"our (?:office|team of)", r"visit (?:us|our office)",
+          r"\d+(?:\.\d+)?\s?%", r"\bpercent\b", r"according to (?:a |an |the )?(?:study|survey|report|research)",
+          r"studies (?:show|suggest)", r"research (?:shows|suggests)"]
 
 def flatten(d):
     parts = [d["title"], d["meta_description"], d["h1"], d["intro"], d["cta_text"]]
     for s in d["sections"]:
-        parts += [s["h2"]] + list(s.get("paragraphs", [])) + list(s.get("bullets", []) or [])
+        parts += [s["h2"]] + list(s.get("paragraphs", [])) + list(s.get("bullets", []) or []) + list(s.get("steps", []) or [])
+        if s.get("example"): parts.append(s["example"])
+        for sub in s.get("subsections", []) or []:
+            parts += [sub.get("h3", "")] + list(sub.get("paragraphs", [])) + list(sub.get("bullets", []) or [])
     for f in d["faq"]:
         parts += [f["q"], f["a"]]
+    parts += list(d.get("key_takeaways") or [])
+    t = d.get("comparison_table")
+    if t:
+        parts += [t.get("caption", "")] + list(t.get("headers", [])) + [c for r in t.get("rows", []) for c in r]
     return "\n".join(str(p) for p in parts)
 
 def deterministic(d, facts):

@@ -1,14 +1,19 @@
-name: SEO Agent (biweekly)
+name: SEO Agent (weekly)
 
 on:
   schedule:
-    - cron: "30 3 * * 1"        # every Monday 09:00 IST; the agent itself skips if run under 13 days ago
+    - cron: "30 3 * * 1"        # every Monday 09:00 IST; the agent itself skips if run under 6 days ago
   workflow_dispatch:
     inputs:
       force:
-        description: "Run even if the last run was under 13 days ago"
+        description: "Run even if the last run was under 6 days ago"
         type: boolean
         default: false
+      mode:
+        description: "auto = alternate new page / refresh; or force one"
+        type: choice
+        options: [auto, new, refresh]
+        default: auto
 
 permissions:
   contents: write
@@ -34,10 +39,12 @@ jobs:
         working-directory: seo-agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: stronger writing than the free Groq model
           GSC_SA_JSON: ${{ secrets.GSC_SA_JSON }}   # legacy key, leave unset when using keyless login
           GSC_SITE: ${{ secrets.GSC_SITE }}
           FORCE: ${{ inputs.force }}
-        run: python -m agent.run --root ..
+          MODE: ${{ inputs.mode }}
+        run: python -m agent.run --root .. --mode "${MODE:-auto}"
       - name: Open PR for approval
         id: cpr
         uses: peter-evans/create-pull-request@v6
@@ -47,8 +54,8 @@ jobs:
           add-paths: |
             site/**
             seo-agent/state/**
-          commit-message: "SEO agent: new page for approval"
-          title: "SEO agent: new page for approval"
+          commit-message: "SEO agent: page for approval"
+          title: "SEO agent: page for approval"
           body-path: seo-agent/out/pr_body.md
       - name: Tell me on Telegram
         if: steps.cpr.outputs.pull-request-url != ''
