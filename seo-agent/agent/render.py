@@ -1,5 +1,5 @@
 """Render a page that matches the main site's palette, with Article + FAQ + Breadcrumb schema."""
-import html, json
+import html, json, re
 from urllib.parse import quote
 
 CSS = """:root{--black:#06080d;--navy:#0a1220;--navy-card:#0d182b;--gold:#c9a84c;--gold-bright:#f0c040;--text:#e8ebf2;--muted:#9aa3b2;--border:rgba(201,168,76,.28)}
@@ -22,6 +22,11 @@ h2{font-size:1.45rem;color:var(--gold-bright);margin:34px 0 10px}p{color:#cbd5e1
 .more{margin-top:26px;font-size:.92rem}.more a{margin-right:14px}
 footer{text-align:center;padding:24px;color:var(--muted);font-size:.82rem;border-top:1px solid rgba(201,168,76,.15)}
 .list a.card{display:block;text-decoration:none;padding:18px 20px;margin-bottom:12px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(150deg,var(--navy),var(--navy-card))}
+.toc{margin:0 0 28px;padding:14px 20px;border:1px solid var(--border);border-radius:14px}.toc b{color:var(--gold-bright);font-family:'Playfair Display',serif}
+.toc ol{margin:8px 0 0 20px}.toc li{margin-bottom:4px}h3{font-size:1.15rem;color:#f3e6b3;margin:20px 0 8px;font-family:'Playfair Display',serif}
+ol.steps{margin:0 0 16px 22px;color:#cbd5e1}ol.steps li{margin-bottom:8px}
+.example{margin:0 0 16px;padding:14px 18px;border-left:3px solid var(--gold);background:rgba(10,18,32,.6);border-radius:0 12px 12px 0}.example b{color:var(--gold-bright)}
+html{scroll-padding-top:16px}
 .byline{font-size:.85rem;color:var(--muted);margin:-6px 0 18px}.byline a{color:var(--muted)}
 .takeaways{margin:0 0 28px;padding:16px 20px;border:1px solid var(--border);border-radius:14px;background:rgba(13,24,43,.7)}
 .takeaways b{color:var(--gold-bright);font-family:'Playfair Display',serif}.takeaways ul{margin:8px 0 0 20px}
@@ -54,11 +59,24 @@ def _fmt(iso):
 def render_page(d, cfg, facts, date_iso, published_iso=None, related=None):
     published_iso = published_iso or date_iso
     url = "%s/blog/%s/" % (cfg["site_url"], d["slug"])
-    secs = ""
+    secs, toc, used = "", "", set()
     for s in d["sections"]:
-        secs += "<h2>%s</h2>" % e(s["h2"]) + "".join("<p>%s</p>" % e(p) for p in s["paragraphs"])
+        sid = re.sub(r"[^a-z0-9]+", "-", s["h2"].lower()).strip("-")[:50] or "section"
+        base, n = sid, 2
+        while sid in used:
+            sid = "%s-%d" % (base, n); n += 1
+        used.add(sid)
+        toc += '<li><a href="#%s">%s</a></li>' % (sid, e(s["h2"]))
+        secs += '<h2 id="%s">%s</h2>' % (sid, e(s["h2"])) + "".join("<p>%s</p>" % e(p) for p in s["paragraphs"])
+        if s.get("steps"):
+            secs += '<ol class="steps">' + "".join("<li>%s</li>" % e(b) for b in s["steps"]) + "</ol>"
         if s.get("bullets"):
             secs += "<ul>" + "".join("<li>%s</li>" % e(b) for b in s["bullets"]) + "</ul>"
+        for sub in s.get("subsections") or []:
+            secs += "<h3>%s</h3>" % e(sub["h3"]) + "".join("<p>%s</p>" % e(p) for p in sub["paragraphs"])
+        if s.get("example"):
+            secs += '<div class="example"><b>Example: </b>%s</div>' % e(s["example"])
+    toc = '<nav class="toc" aria-label="Contents"><b>In this guide</b><ol>%s</ol></nav>' % toc
     take = ""
     if d.get("key_takeaways"):
         take = '<div class="takeaways"><b>Key takeaways</b><ul>%s</ul></div>' % "".join("<li>%s</li>" % e(x) for x in d["key_takeaways"])
@@ -75,12 +93,16 @@ def render_page(d, cfg, facts, date_iso, published_iso=None, related=None):
     faq = "".join("<details><summary>%s</summary><p>%s</p></details>" % (e(f["q"]), e(f["a"])) for f in d["faq"])
     wa = cfg["whatsapp"] + "?text=" + quote("Hi Anmol, I read your page: " + d["title"])
     samples = "".join('<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>' % (e(s["url"]), e(s["name"])) for s in facts["samples"])
-    byline = '<div class="byline">By <a href="/">%s</a> &middot; Updated <time datetime="%s">%s</time></div>' % (e(cfg["author"]), e(date_iso), _fmt(date_iso))
-    body = ('<main><div class="crumbs"><a href="/">Home</a> / <a href="/blog/">Guides</a> / %s</div><h1>%s</h1>%s<div class="intro">%s</div>%s%s%s'
+    from .quality import count_words
+    from .factcheck import flatten
+    wc = count_words(flatten(d))
+    byline = ('<div class="byline">By <a href="/">%s</a> &middot; Updated <time datetime="%s">%s</time> &middot; %d min read</div>'
+              % (e(cfg["author"]), e(date_iso), _fmt(date_iso), max(1, round(wc / 220.0))))
+    body = ('<main><div class="crumbs"><a href="/">Home</a> / <a href="/blog/">Guides</a> / %s</div><h1>%s</h1>%s<div class="intro">%s</div>%s%s%s%s'
             '<h2>Frequently asked questions</h2><div class="faq">%s</div>%s'
             '<div class="cta"><p>%s</p><a class="wa" href="%s" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></div>'
             '<div class="more"><a href="/#services">See all packages</a><a href="/#agents">AI agent systems</a><a href="/#faq">More FAQs</a></div>'
-            '<div class="more">Live samples: %s</div></main>') % (e(d["h1"]), e(d["h1"]), byline, e(d["intro"]), take, secs, table, faq, rel, e(d["cta_text"]), e(wa), samples)
+            '<div class="more">Live samples: %s</div></main>') % (e(d["h1"]), e(d["h1"]), byline, e(d["intro"]), take, toc, secs, table, faq, rel, e(d["cta_text"]), e(wa), samples)
     same_as = [u for u in cfg.get("same_as", []) if u]
     author = {"@type": "Person", "name": cfg["author"], "url": cfg["site_url"] + "/"}
     publisher = {"@type": "Organization", "name": cfg["brand"], "url": cfg["site_url"] + "/"}
@@ -88,7 +110,7 @@ def render_page(d, cfg, facts, date_iso, published_iso=None, related=None):
         author["sameAs"] = same_as; publisher["sameAs"] = same_as
     schema = ld({"@context": "https://schema.org", "@graph": [
         {"@type": "Article", "headline": d["title"], "description": d["meta_description"], "datePublished": published_iso,
-         "dateModified": date_iso, "inLanguage": "en-IN", "mainEntityOfPage": url, "author": author, "publisher": publisher,
+         "dateModified": date_iso, "wordCount": wc, "inLanguage": "en-IN", "mainEntityOfPage": url, "author": author, "publisher": publisher,
          "speakable": {"@type": "SpeakableSpecification", "cssSelector": [".intro", ".takeaways"]}},
         {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": f["q"], "acceptedAnswer": {"@type": "Answer", "text": f["a"]}} for f in d["faq"]]},
         {"@type": "BreadcrumbList", "itemListElement": [

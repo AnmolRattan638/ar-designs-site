@@ -4,7 +4,7 @@ import argparse, json, os, sys
 from datetime import date, datetime
 from pathlib import Path
 
-from . import keywords, choose as chooser, writer, factcheck, render, publish as pub, analyst, gsc as gscmod
+from . import keywords, choose as chooser, pipeline, quality, render, publish as pub, analyst, gsc as gscmod
 
 def _read(p, default):
     try:
@@ -12,21 +12,6 @@ def _read(p, default):
     except FileNotFoundError:
         return default
     return json.loads(t) if t else default
-
-def _generate(llm, facts, keyword, page_type, refresh=None):
-    """Draft + fact-check, with ONE regeneration only (protects free-tier credits)."""
-    def once(issues=None):
-        d, problems = writer.draft(llm, facts, keyword, page_type, issues, refresh)
-        if refresh and isinstance(d, dict):
-            d["slug"] = refresh["slug"]
-        return d, problems
-    draft, problems = once()
-    issues = problems or factcheck.check(draft, facts, llm)
-    if issues:
-        print("Regenerating once. Issues:", issues)
-        draft, problems = once(issues)
-        issues = problems or factcheck.check(draft, facts, llm)
-    return draft, issues
 
 def main(argv=None, llm=None, fetch=None, gsc_rows=None, page_rows=None):
     ap = argparse.ArgumentParser()
@@ -49,11 +34,12 @@ def main(argv=None, llm=None, fetch=None, gsc_rows=None, page_rows=None):
         (out / "summary.json").write_text(json.dumps({"skipped": True}))
         return 0
 
-    if llm is None and os.environ.get("GROQ_API_KEY"):
-        from .llm import GroqLLM
-        llm = GroqLLM(cfg.get("model"))
     if llm is None:
-        print("GROQ_API_KEY missing: cannot write a page"); return 2
+        from .llm import make_llm
+        llm = make_llm(cfg)
+    if llm is None:
+        print("No GROQ_API_KEY or ANTHROPIC_API_KEY: cannot write a page"); return 2
+    research_fetch = fetch or keywords.autocomplete
 
     published = _read(state / "published.json", [])
 
@@ -85,8 +71,8 @@ def main(argv=None, llm=None, fetch=None, gsc_rows=None, page_rows=None):
         entry = next(p for p in published if p["slug"] == cand["slug"])
         prev = json.loads((state / "drafts" / (entry["slug"] + ".json")).read_text(encoding="utf-8"))
         print("Refreshing:", entry["slug"], "|", cand["reason"])
-        draft, issues = _generate(llm, facts, entry["keyword"], entry["page_type"],
-                                  {"slug": entry["slug"], "previous": prev, "queries": cand["queries"]})
+        draft, issues, q = pipeline.build(llm, facts, cfg, entry["keyword"], entry["page_type"], fetch=research_fetch,
+                                          refresh={"slug": entry["slug"], "previous": prev, "queries": cand["queries"]})
         if issues:
             (out / "summary.json").write_text(json.dumps({"failed": True, "keyword": entry["keyword"], "issues": issues}, indent=1))
             print("ABORT: refresh failed fact-check:", issues); return 3
@@ -103,7 +89,7 @@ def main(argv=None, llm=None, fetch=None, gsc_rows=None, page_rows=None):
         cands = (gsc_rows or []) + cands
         pick = chooser.choose(cands, [p["keyword"] for p in published], llm, cfg=cfg, published=published, lessons=lessons)
         print("Keyword:", pick["keyword"], "|", pick["page_type"], "|", pick["reason"])
-        draft, issues = _generate(llm, facts, pick["keyword"], pick["page_type"])
+        draft, issues, q = pipeline.build(llm, facts, cfg, pick["keyword"], pick["page_type"], fetch=research_fetch)
         if issues:
             (out / "summary.json").write_text(json.dumps({"failed": True, "keyword": pick["keyword"], "issues": issues}, indent=1))
             print("ABORT: draft failed fact-check:", issues); return 3
@@ -117,9 +103,10 @@ def main(argv=None, llm=None, fetch=None, gsc_rows=None, page_rows=None):
 
     analyst.save(state, exps, lessons)
     (state / "last_run.json").write_text(json.dumps({"date": today, "mode": mode}))
-    body = head + "Review the Netlify deploy preview below, then **Merge = approve**, **Close = reject**.\n\n" + analyst.report_md(exps, lessons, have_gsc) + "\n"
+    body = (head + quality.summary_md(q) + "\n\nReview the Netlify deploy preview below, then **Merge = approve**, **Close = reject**.\n\n"
+            + analyst.report_md(exps, lessons, have_gsc) + "\n")
     (out / "pr_body.md").write_text(body, encoding="utf-8")
-    (out / "summary.json").write_text(json.dumps({"mode": mode, "title": title, "url": url}))
+    (out / "summary.json").write_text(json.dumps({"mode": mode, "title": title, "url": url, "words": q["words"]}))
     print("Drafted (%s): %s" % (mode, url)); return 0
 
 if __name__ == "__main__":

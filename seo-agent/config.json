@@ -75,5 +75,11 @@
  "refresh_min_age_days": 21,
  "refresh_stale_days": 60,
  "same_as": [],
- "indexnow_key": "332009ddc3d73dd9e16de45b470608da"
+ "indexnow_key": "332009ddc3d73dd9e16de45b470608da",
+ "min_words": 1500,
+ "min_sections": 7,
+ "min_section_words": 170,
+ "min_faq": 7,
+ "llm_pause_seconds": 8,
+ "anthropic_model": "claude-sonnet-5-5"
 }
