@@ -57,3 +57,15 @@ After that it runs every Monday morning and skips itself unless 13+ days have pa
 - **IndexNow:** after a merge, `.github/workflows/indexnow.yml` pings Bing/IndexNow with the changed guide URLs. The key file lives in `site/`.
 
 Offline tests: `cd seo-agent && python -I tests/test_offline.py`
+
+### Content depth (long, detailed pages)
+
+Each page is built in passes, not in one call:
+1. **Research:** real questions people type about the keyword (Google autocomplete).
+2. **Outline:** 7-8 sections with distinct purposes (answer, process, costs from `facts.json`, mistakes, checklist, how AR Designs works, next steps).
+3. **Sections:** one LLM call per section (220-340 words, steps/bullets/examples, optional H3s).
+4. **Frame:** direct-answer intro, 3 key takeaways, optional comparison table, 8-question FAQ.
+5. **Quality gates** (`seo-agent/agent/quality.py`): at least 1,500 words, 7+ sections, no thin sections, keyword in title/H1/intro, no filler phrases or repeated sentences. Thin or flawed parts get **one** rewrite.
+6. **Fact-check:** prices, hours, invented statistics/percentages, guarantees. Hard problems block the page; soft ones are listed in the PR.
+
+Set the optional repo secret `ANTHROPIC_API_KEY` to write with Claude instead of the free Groq model (better prose, paid per run).
